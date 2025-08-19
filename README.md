@@ -1,1 +1,3 @@
-# CS4530_u1241184
+- Annie de Bry
+- u1241184
+- anniedebry
