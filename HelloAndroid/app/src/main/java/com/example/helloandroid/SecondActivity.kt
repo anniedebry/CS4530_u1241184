@@ -20,16 +20,18 @@ class SecondActivity : AppCompatActivity() {
             insets
         }
 
+        //takes the text transferred from the first activities intent and displays it in the text field
         val textView: TextView = findViewById(R.id.textView)
         textView.text = intent.getStringExtra("button_text")
 
+        //returns to the first activity
         fun setOnButtonClicked(button: Button) {
             button.setOnClickListener {
                 val intent = Intent(this, MainActivity::class.java)
                 startActivity(intent)
             }
         }
-
+        
         setOnButtonClicked(findViewById(R.id.back_button))
     }
 }
