@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 
 class Course (val department: String, val number: String, val location: String){
     fun getCourseInfo(): String {
@@ -25,32 +28,28 @@ class Course (val department: String, val number: String, val location: String){
     }
 }
 
-class MyViewModel : ViewModel()
+class CourseViewModel : ViewModel()
 {
-    private val courseList = MutableStateFlow(listOf<Course>())
+    private val _courseList = MutableStateFlow(listOf<Course>())
+    val courseList: StateFlow<List<Course>> = _courseList
     var currentCourse by mutableStateOf<Course?>(null)
 
     //add new course to the list
     fun addCourse(department: String, number: String, location: String){
-        courseList.value = courseList.value + Course(department, number, location)
+        _courseList.value = courseList.value + Course(department, number, location)
     }
 
     //removes courses from the list
     fun removeCourse(course: Course) {
-        courseList.value = courseList.value - course
+        _courseList.value = courseList.value - course
         if(currentCourse == course) {
-            currentCourse == null
+            currentCourse = null
         }
     }
 
     //setter for when user switches course selection
     fun setCurrentCourse(course: Course) {
         currentCourse = course
-    }
-
-    //clears the course selection
-    fun clearCurrentCourse(course: Course) {
-        currentCourse = null
     }
 }
 
@@ -60,9 +59,30 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Assignment2Theme {
-                //put code here
+                val vm: CourseViewModel = viewModel()
             }
         }
     }
 }
 
+@Composable
+fun CourseApplication(vm: CourseViewModel) {
+    val courses by vm.courseList.collectAsState()
+    val selected = vm.currentCourse
+
+    if (selected == null) {
+        CourseListPage(
+            courses = courses,
+            onAdd = { d, n, l -> vm.addCourse(d, n, l) },
+            onSelect = { vm.setCurrentCourse(it) },
+            onDelete = { vm.removeCourse(it) }
+        )
+    }
+}
+
+@Composable
+fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Unit, onSelect: (Course) -> Unit, onDelete: (Course) -> Unit) {
+    var department by remember { mutableStateOf("") }
+    var number by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+}
