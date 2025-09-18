@@ -64,6 +64,10 @@ class CourseViewModel : ViewModel()
     fun currentCourse(course: Course) {
         currentCourse = course
     }
+
+    fun clearCurrentCourse() {
+        currentCourse = null
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -84,6 +88,7 @@ fun CourseApplication(vm: CourseViewModel) {
     val courses by vm.courseList.collectAsState()
     val selected = vm.currentCourse
 
+    //if no course has been selected, keep displaying list of courses added
     if (selected == null) {
         CourseListPage(
             courses = courses,
@@ -91,6 +96,9 @@ fun CourseApplication(vm: CourseViewModel) {
             onSelect = { vm.currentCourse(it) },
             onDelete = { vm.removeCourse(it) }
         )
+    } else {
+        //go to detail view page if a course is selected
+        DetailViewPage(course = selected, vm = vm)
     }
 }
 
@@ -100,6 +108,7 @@ fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Uni
     var number by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
 
+    //text fields for adding course data
     Column(Modifier.fillMaxSize().padding(32.dp)) {
         OutlinedTextField(
             value = department,
@@ -108,12 +117,13 @@ fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Uni
         OutlinedTextField(
             value = number,
             onValueChange = { number = it },
-            label = { Text("Number") })
+            label = { Text("Course Number") })
         OutlinedTextField(
             value = location,
             onValueChange = { location = it },
             label = { Text("Location") })
 
+        //adds class to course list
         Button(onClick = {
             onAdd(department, number, location)
             department = ""; number = ""; location = ""
@@ -123,12 +133,14 @@ fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Uni
 
         Spacer(Modifier.height(32.dp))
 
+        //displays all added courses
         LazyColumn {
             items(courses) { course ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp).clickable { onSelect(course) },
+                    modifier = Modifier.fillMaxWidth().padding(32.dp).clickable { onSelect(course) },
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    //for removing the course from the list
                     Text(course.getCourseInfo())
                     TextButton(onClick = { onDelete(course) }) { Text("Delete") }
                 }
@@ -139,5 +151,18 @@ fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Uni
 
 @Composable
 fun DetailViewPage(course: Course, vm: CourseViewModel = viewModel()) {
-    
+    //displays all relevant information for the selected course
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp)) {
+        Text("Department: ${course.department}")
+        Text("Course Number: ${course.number}")
+        Text("Location: ${course.location}")
+
+        Spacer(Modifier.height(10.dp))
+
+        //sends user back to the list view page
+        Button(onClick = { vm.clearCurrentCourse() }) {
+            Text("Back")
+        }
+    }
 }
