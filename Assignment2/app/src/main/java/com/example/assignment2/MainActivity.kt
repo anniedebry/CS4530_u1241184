@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -65,8 +66,19 @@ class CourseViewModel : ViewModel()
         currentCourse = course
     }
 
+    //clear selected course
     fun clearCurrentCourse() {
         currentCourse = null
+    }
+
+    //edit a currently existing course
+    fun editCourse(oldCourse: Course, newDepartment: String, newNumber: String, newLocation: String) {
+        _courseList.value = _courseList.value.map {
+            if (it == oldCourse) Course(newDepartment, newNumber, newLocation) else it
+        }
+        if (currentCourse == oldCourse) {
+            currentCourse = Course(newDepartment, newNumber, newLocation)
+        }
     }
 }
 
@@ -94,7 +106,8 @@ fun CourseApplication(vm: CourseViewModel) {
             courses = courses,
             onAdd = { d, n, l -> vm.addCourse(d, n, l) },
             onSelect = { vm.currentCourse(it) },
-            onDelete = { vm.removeCourse(it) }
+            onDelete = { vm.removeCourse(it) },
+            onEdit = { old, d, n, l -> vm.editCourse(old, d, n, l) }
         )
     } else {
         //go to detail view page if a course is selected
@@ -103,10 +116,16 @@ fun CourseApplication(vm: CourseViewModel) {
 }
 
 @Composable
-fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Unit, onSelect: (Course) -> Unit, onDelete: (Course) -> Unit) {
+fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Unit, onSelect: (Course) -> Unit, onDelete: (Course) -> Unit, onEdit: (Course, String, String, String) -> Unit) {
     var department by remember { mutableStateOf("") }
     var number by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
+
+    //course being edited
+    var editingCourse by remember { mutableStateOf<Course?>(null) }
+    var editDepartment by remember { mutableStateOf("") }
+    var editNumber by remember { mutableStateOf("") }
+    var editLocation by remember { mutableStateOf("") }
 
     //text fields for adding course data
     Column(Modifier.fillMaxSize().padding(32.dp)) {
@@ -134,15 +153,74 @@ fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Uni
         Spacer(Modifier.height(32.dp))
 
         //displays all added courses
-        LazyColumn {
+        //Lazycolumn with UI modifiers to have editing look better
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
             items(courses) { course ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(32.dp).clickable { onSelect(course) },
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    //for removing the course from the list
-                    Text(course.getCourseInfo())
-                    TextButton(onClick = { onDelete(course) }) { Text("Delete") }
+                if (editingCourse == course) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(vertical = 8.dp)
+                            .clickable(enabled = false) {} //disables course selecting while editing a course
+                    ) {
+                        OutlinedTextField(
+                            value = editDepartment,
+                            onValueChange = { editDepartment = it },
+                            label = { Text("Department") },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = editNumber,
+                            onValueChange = { editNumber = it },
+                            label = { Text("Course Number") },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = editLocation,
+                            onValueChange = { editLocation = it },
+                            label = { Text("Location") },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        )
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = {
+                                    onEdit(course, editDepartment, editNumber, editLocation)
+                                    editingCourse = null
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("Save") }
+                        }
+                    }
+
+                } else {
+                    //normal row view
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .clickable { onSelect(course) },
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(course.getCourseInfo(), modifier = Modifier.weight(3f))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                editingCourse = course
+                                editDepartment = course.department
+                                editNumber = course.number
+                                editLocation = course.location
+                            }) { Text("Edit") }
+                            TextButton(onClick = { onDelete(course) }) { Text("Delete") }
+                        }
+                    }
                 }
             }
         }
@@ -153,7 +231,8 @@ fun CourseListPage(courses: List<Course>, onAdd: (String, String, String) -> Uni
 fun DetailViewPage(course: Course, vm: CourseViewModel = viewModel()) {
     //displays all relevant information for the selected course
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp)) {
+        modifier = Modifier.fillMaxSize().padding(32.dp)
+    ) {
         Text("Department: ${course.department}")
         Text("Course Number: ${course.number}")
         Text("Location: ${course.location}")
