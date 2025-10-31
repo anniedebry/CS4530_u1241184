@@ -7,5 +7,4 @@ import androidx.room.PrimaryKey
 data class FactEntity(
     val fact: String,
     @PrimaryKey(autoGenerate = true) val id: Int = 0) {
-    fun getCourseInfo() = fact
 }

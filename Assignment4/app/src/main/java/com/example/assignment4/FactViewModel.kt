@@ -18,8 +18,8 @@ class FactViewModel(private val factRepository: FactRepository) : ViewModel() {
             emptyList()
         )
 
-    fun addFact(fact: String) {
-        factRepository.addCourse(fact)
+    fun fetchFact() {
+        factRepository.fetchAndStoreFact()
     }
 
     object FactViewModelProvider {
