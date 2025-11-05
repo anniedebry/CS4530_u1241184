@@ -12,21 +12,35 @@ import kotlinx.coroutines.flow.channelFlow
 data class MarbleReading(val x: Float, val y: Float, val z: Float)
 
 class MarbleRepository(private val sensorManager: SensorManager) {
-    fun getGyroFlow(): Flow<MarbleReading> = channelFlow {
-        val gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-        if (gyroscope == null) {
+    fun getGravityFlow(): Flow<MarbleReading> = channelFlow {
+        val gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
+        val sensor = gravitySensor ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+        if (sensor == null) {
             return@channelFlow
         }
 
+        val alpha = 0.8f
+        val gravity = FloatArray(3)
+
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent) {
-                trySendBlocking(MarbleReading(event.values[0], event.values[1], event.values[2]))
+                val values = event.values
+
+                if (sensor.type == Sensor.TYPE_ACCELEROMETER) {
+                    gravity[0] = alpha * gravity[0] + (1 - alpha) * values[0]
+                    gravity[1] = alpha * gravity[1] + (1 - alpha) * values[1]
+                    gravity[2] = alpha * gravity[2] + (1 - alpha) * values[2]
+                    trySendBlocking(MarbleReading(gravity[0], gravity[1], gravity[2]))
+                } else {
+                    trySendBlocking(MarbleReading(values[0], values[1], values[2]))
+                }
             }
 
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
         }
 
-        sensorManager.registerListener(listener, gyroscope, SensorManager.SENSOR_DELAY_UI)
+        sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
         awaitClose { sensorManager.unregisterListener(listener) }
     }
 }
