@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MarbleScreen(viewModel: MarbleViewModel) {
     val marble by viewModel.marbleState.collectAsStateWithLifecycle()
-    val marbleSize = 40.dp
+    val marbleSize = 80.dp
 
     BoxWithConstraints(
         modifier = Modifier
